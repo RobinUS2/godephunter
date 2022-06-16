@@ -7,4 +7,5 @@ func main() {
 	if svc == nil {
 		panic("nil")
 	}
+	// @todo read from std in and pass to service, print output
 }
