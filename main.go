@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"github.com/RobinUS2/godephunter/service"
 	"time"
 )
@@ -11,16 +11,27 @@ func main() {
 	if svc == nil {
 		panic("nil")
 	}
-	var res chan string
+
+	var target string
+	flag.StringVar(&target, "find", "", "the name of the dep to locate (e.g. github.com/Route42/golang-commons/httpclient@v0.0.0-20210615)")
+	flag.Parse()
+
+	var bodyChan = make(chan string, 1)
 	go func() {
-		res <- svc.ReadStdIn()
+		bodyChan <- svc.ReadStdIn()
 	}()
 	select {
-	case <-res:
-		fmt.Println(res)
+	case body := <-bodyChan:
+		opts := svc.NewScanOpts()
+		opts.Target = service.Target(target)
+		res, err := svc.Scan(body, opts)
+		if err != nil {
+			svc.Log().Error(err)
+			return
+		}
+		svc.Log().Info(res.String())
 	case <-time.After(5 * time.Second):
 		// timeout
-		svc.Log().Error(`failed to read from stdin. use as:` + "\n" + `go mod graph | godephunter --locate="github.com/Route42/golang-commons/httpclient@v0.0.0-20210615"` + "\n\n")
+		svc.Log().Error(`failed to read from stdin. use as:` + "\n" + `go mod graph | godephunter --find="github.com/Route42/golang-commons/httpclient@v0.0.0-20210615"` + "\n\n")
 	}
-	// @todo read from std in and pass to service, print output
 }

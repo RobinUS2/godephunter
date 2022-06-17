@@ -24,6 +24,7 @@ type Opts struct {
 }
 
 type Result struct {
+	Query Opts
 	Chain []Dep
 }
 
@@ -33,7 +34,7 @@ func (res Result) String() string {
 		prefix := strings.Repeat(" ", i)
 		lines = append(lines, fmt.Sprintf("%s%s -> %s", prefix, elm.To, elm.From))
 	}
-	return strings.Join(lines, "\n")
+	return fmt.Sprintf("locating %s\n", res.Query.Target) + strings.Join(lines, "\n")
 }
 
 func (i Instance) NewScanOpts() Opts {
@@ -111,6 +112,7 @@ outer:
 		return nil, fmt.Errorf("%s not found", opts.Target)
 	}
 	return &Result{
+		Query: opts,
 		Chain: chain,
 	}, nil
 }
