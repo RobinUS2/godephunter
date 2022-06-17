@@ -2,6 +2,7 @@ package service
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -21,6 +22,13 @@ type Target string
 
 type Opts struct {
 	Target Target
+}
+
+func (o Opts) Validate() error {
+	if len(strings.TrimSpace(string(o.Target))) < 1 {
+		return errors.New(`target empty (pass via --find="github.com/my-org/dep@v0.0.0-20210615"`)
+	}
+	return nil
 }
 
 type Result struct {
@@ -71,6 +79,9 @@ func (i Instance) ReadStdIn() string {
 }
 
 func (i Instance) Scan(goModOutput string, opts Opts) (*Result, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid options %s", err)
+	}
 	goModOutput = strings.TrimSpace(goModOutput)
 	i.log.Debugf("%s", goModOutput)
 	lines := strings.Split(goModOutput, "\n")
