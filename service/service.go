@@ -106,14 +106,22 @@ func (i Instance) Scan(goModOutput string, opts Opts) (*Result, error) {
 	i.log.Debugf("opts %+v target %s", opts, string(opts.Target))
 	chain := make([]Dep, 0)
 	var currentTarget = opts.Target
+	unique := make(map[Dep]bool)
+	const maxDepth = 1000 // should never be reached really, is more to prevent infinite recursions that are not dealt with
 outer:
-	for {
+	for n := 0; n < maxDepth; n++ {
 		for _, dep := range deps {
 			//log.Println(dep.From, dep.To)
 			if strings.Contains(string(dep.To), string(currentTarget)) { // @semantic version support for both httpclient@v0.0.0-20210615 or httpclient@v1.0.2 formats
 				i.log.Debugf("found %s in %+v", currentTarget, dep)
 				chain = append(chain, dep)
 				currentTarget = Target(dep.From) // shift to next one
+				if _, found := unique[dep]; found {
+					// recursion!
+					i.log.Warnf("recursion found in dependency chain (from %s to %s) depth %d", dep.From, dep.To, n)
+					break outer
+				}
+				unique[dep] = true
 				continue outer
 			}
 		}
