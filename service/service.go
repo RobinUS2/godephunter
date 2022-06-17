@@ -1,14 +1,20 @@
 package service
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
 type Instance struct {
 	log *logrus.Logger
+}
+
+func (i Instance) Log() *logrus.Logger {
+	return i.log
 }
 
 type Target string
@@ -23,8 +29,9 @@ type Result struct {
 
 func (res Result) String() string {
 	lines := make([]string, 0)
-	for _, elm := range res.Chain {
-		lines = append(lines, fmt.Sprintf("%s -> %s", elm.From, elm.To)) // @Todo check formatting
+	for i, elm := range res.Chain {
+		prefix := strings.Repeat(" ", i)
+		lines = append(lines, fmt.Sprintf("%s%s -> %s", prefix, elm.To, elm.From))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -48,6 +55,18 @@ type To string
 type Dep struct {
 	From From
 	To   To
+}
+
+func (i Instance) ReadStdIn() string {
+	scanner := bufio.NewScanner(os.Stdin)
+	lines := make([]string, 0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if scanner.Err() != nil {
+		i.log.Errorf("failed to read std in %s", scanner.Err())
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (i Instance) Scan(goModOutput string, opts Opts) (*Result, error) {
